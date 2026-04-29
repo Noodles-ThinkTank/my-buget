@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1F3D51">
+<title>My Budget Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1F3D51;
+    --surface: #2a4f65;
+    --surface2: #1a3345;
+    --border: #2d5068;
+    --text: #F1C9C2;
+    --muted: #a8c5d4;
+    --dim: #4a7a96;
+    --accent: #D6E8D9;
+    --accent2: #F1C9C2;
+    --accent3: #D6E8D9;
+    --accent4: #F1C9C2;
+    --accent5: #a8c5d4;
+    --radius: 16px;
+    --font: 'Syne', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  body.light {
+    --bg: #f0f4f2;
+    --surface: #ffffff;
+    --surface2: #e8eff0;
+    --border: #cddde6;
+    --text: #1F3D51;
+    --muted: #5a7f96;
+    --dim: #a8c5d4;
+    --accent: #1F3D51;
+    --accent2: #F1C9C2;
+    --accent3: #D6E8D9;
+    --accent4: #d44f6e;
+    --accent5: #a8c5d4;
+  }
+
+  /* Toggle button */
+  .theme-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .header h1 span { color: #D6E8D9; }
+  body.light .header h1 span { color: #1F3D51; }
+
+  /* Light mode input fixes */
+  body.light .text-input,
+  body.light .num-input {
+    background: #f8fafa;
+    color: #1F3D51;
+    border-color: #cddde6;
+  }
+  body.light input[type=range] { background: #cddde6; }
+  body.light input[type=range]::-webkit-slider-thumb { background: #1F3D51; border-color: #f0f4f2; }
+  body.light input[type=range]::-moz-range-thumb { background: #1F3D51; border-color: #f0f4f2; }
+  body.light .inline-num { color: #1F3D51; border-color: #a8c5d4; }
+  body.light .inline-num:focus { border-color: #1F3D51; }
+  body.light .btn { background: #e8eff0; color: #1F3D51; }
+  body.light .btn:hover { background: #1F3D51; color: #ffffff; border-color: #1F3D51; }
+  body.light .tip-box { background: #e8eff0; }
+  body.light .stat { background: #ffffff; }
+  body.light .fixed-bar { background: #cddde6; }
+  .save-badge {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  /* Tab nav */
+  .tab-nav {
+    display: flex;
+    gap: 6px;
+    padding: 16px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    color: #1F3D51;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Light mode tab fix — white text on navy is unreadable, use navy bg with white text instead */
+  body.light .tab-btn {
+    color: var(--muted);
+    border-color: var(--border);
+    background: transparent;
+  }
+  body.light .tab-btn.active {
+    background: #1F3D51;
+    color: #ffffff;
+    border-color: #1F3D51;
+    font-weight: 700;
+  }
+
+  /* Content */
+  .content { padding: 16px 20px; }
+  .tab-view { display: none; }
+  .tab-view.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  /* Stats grid */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .stat-label { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .stat-val { font-size: 24px; font-weight: 700; letter-spacing: -1px; }
+  .stat-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Sliders */
+  .slider-row { margin-bottom: 14px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .slider-label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .slider-val { font-family: var(--mono); font-size: 13px; color: var(--muted); font-weight: 500; }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface2);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--text);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--border);
+    cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--text);
+    border: 2px solid var(--bg);
+    cursor: pointer;
+  }
+
+  /* Segment bar */
+  .seg-bar {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    gap: 2px;
+    margin: 12px 0 4px;
+  }
+  .seg-bar div { border-radius: 3px; transition: flex .3s; }
+
+  /* Progress bar */
+  .prog-wrap {
+    height: 12px;
+    background: var(--surface2);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 10px 0 6px;
+  }
+  .prog-bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width .4s ease;
+  }
+
+  /* Inputs */
+  .text-input, .num-input {
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    transition: border-color .2s;
+  }
+  .text-input:focus, .num-input:focus { border-color: #D6E8D9; }
+  .inline-num {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 500;
+    width: 110px;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    outline: none;
+    padding: 4px 0;
+    transition: border-color .2s;
+  }
+  .inline-num:focus { border-color: #D6E8D9; }
+
+  /* Buttons */
+  .btn {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--accent); color: #1F3D51; border-color: #D6E8D9; }
+  .btn-sm {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-sm:hover { border-color: var(--accent4); color: var(--accent4); }
+
+  /* Milestone card */
+  .milestone {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 10px;
+    transition: border-color .3s;
+    background: var(--surface);
+  }
+  .milestone.done    { border-color: #D6E8D9; background: var(--surface); }
+  .milestone.locked  { border-style: dashed; border-color: var(--border); }
+  body.light .milestone         { background: #ffffff; }
+  body.light .milestone.locked  { background: #f8fafa; border-style: dashed; }
+
+  /* Parts list */
+  .part-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .part-row:last-child { border-bottom: none; }
+
+  /* Scenario cards */
+  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .scenario-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+
+  /* Tip box */
+  .tip-box {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .tip-title { font-size: 13px; font-weight: 700; color: #D6E8D9; margin-bottom: 6px; }
+  .tip-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  body.light .tip-title { color: #1F3D51; }
+  body.light .tip-body  { color: #3a6070; }
+
+  /* All muted/dim text needs stronger contrast in light mode */
+  body.light .card-label    { color: #3a6070; }
+  body.light .stat-label    { color: #3a6070; }
+  body.light .stat-sub      { color: #5a7f96; }
+  body.light .slider-val    { color: #1F3D51; }
+  body.light .slider-label  { color: #1F3D51; }
+  body.light .overflow-row  { color: #1F3D51; }
+  body.light .part-row      { color: #1F3D51; }
+  body.light .footer-hint   { color: #5a7f96; }
+  body.light .save-badge    { color: #3a6070; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  /* Row util */
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .row-gap { display: flex; gap: 10px; align-items: flex-end; }
+
+  /* Fixed bar label */
+  .fixed-bar { height: 4px; background: var(--surface2); border-radius: 2px; margin-bottom: 14px; }
+  .fixed-bar-fill { height: 100%; border-radius: 2px; background: #a8c5d4; transition: width .3s; }
+
+  /* Overflow row */
+  .overflow-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .overflow-row:last-child { border-bottom: none; }
+
+  /* Warning */
+  .warning {
+    background: rgba(241,201,194,0.15);
+    border: 1px solid rgba(241,201,194,0.4);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 12px;
+    color: #F1C9C2;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  /* Footer hint */
+  .footer-hint {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>My <span>Budget</span><br>Planner</h1>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+    <div class="save-badge" id="save-badge">● auto-saving</div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
+      <span id="theme-icon">☀️</span>
+      <span id="theme-label">Light</span>
+    </button>
+  </div>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="setTab('plan')">Budget</button>
+  <button class="tab-btn" onclick="setTab('ef')">Emergency Fund</button>
+  <button class="tab-btn" onclick="setTab('robotics')">Robotics</button>
+  <button class="tab-btn" onclick="setTab('overflow')">Leftover</button>
+  <button class="tab-btn" onclick="setTab('scenario')">Low / High Week</button>
+  <button class="tab-btn" onclick="setTab('savings')">💰 My Savings</button>
+</div>
+
+<div class="content">
+
+<!-- ═══════════════════════════════ BUDGET TAB ═══════════════════════════════ -->
+<div id="view-plan" class="tab-view active">
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Weekly income</div>
+      <div class="stat-val" id="s-income">$200</div>
+      <div class="stat-sub" id="s-monthly">≈ $867/mo</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Weekly spendable</div>
+      <div class="stat-val" id="s-flex">$200</div>
+      <div class="stat-sub">after mom's share</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Mom paid off in</div>
+      <div class="stat-val" id="s-mommonths">— mo</div>
+      <div class="stat-sub">at current rate</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Unallocated</div>
+      <div class="stat-val" id="s-leftover">$0</div>
+      <div class="stat-sub">per week</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Weekly income</div>
+    <div class="slider-row">
+      <div class="slider-header">
+        <span class="slider-label">How much did you earn this week?</span>
+        <span class="slider-val" id="lbl-income">$200</span>
+      </div>
+      <input type="range" id="sl-income" min="50" max="700" step="10" value="200" oninput="update()">
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">$50</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">$700</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Fixed bills</div>
+
+    <div class="row" style="margin-bottom:4px;">
+      <span style="font-size:13px;">Car loan</span>
+      <span style="font-family:var(--mono);font-size:13px;font-weight:500;">$149/mo</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:8px;" id="car-tip">💡 Set aside ~$34/wk</div>
+    <div class="fixed-bar"><div class="fixed-bar-fill" id="bar-car"></div></div>
+
+    <div class="row" style="margin-bottom:4px;">
+      <span style="font-size:13px;">Mom repayment / mo</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="lbl-mom">$0/mo</span>
+    </div>
+    <input type="range" id="sl-mom" min="0" max="300" step="10" value="0" oninput="update()" style="margin-bottom:4px;">
+    <div style="display:flex;justify-content:space-between;">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">$0</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">$300/mo</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:4px;" id="mom-wk-tip"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Flexible buckets — % of weekly spendable</div>
+    <div id="flex-sliders"></div>
+    <div class="seg-bar" id="seg-bar"></div>
+    <hr class="divider">
+    <div class="row">
+      <span style="font-size:13px;color:var(--muted);">Unallocated this week</span>
+      <span style="font-family:var(--mono);font-size:13px;font-weight:500;" id="lbl-leftover">$0/wk</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ EMERGENCY FUND TAB ═══════════════════════════════ -->
+<div id="view-ef" class="tab-view">
+  <div class="card">
+    <div class="card-label">Total saved so far</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:22px;font-weight:700;">$</span>
+      <input class="inline-num" type="number" id="ef-saved" min="0" max="9999" value="0" oninput="saveData();updateEF()">
+      <span style="font-size:13px;color:var(--muted);">saved</span>
+    </div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="ef-contrib-note">Set your EF % in Budget tab</div>
+  </div>
+
+  <div id="ef-milestones"></div>
+
+  <div class="tip-box">
+    <div class="tip-title" id="ef-next-label">Next milestone</div>
+    <div class="tip-body" id="ef-next-tip">Enter your savings above to see your progress.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ROBOTICS TAB ═══════════════════════════════ -->
+<div id="view-robotics" class="tab-view">
+
+  <div class="card">
+    <div class="row" style="margin-bottom:10px;">
+      <div>
+        <div class="card-label" style="margin-bottom:2px;">Total robotics fund</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="r-rate-note">Set Robotics % in Budget tab</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:24px;font-weight:700;letter-spacing:-1px;" id="r-saved-disp">$0</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="r-goal-disp">of $0.00 total</div>
+      </div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-bar" id="r-main-bar" style="width:0%;background:linear-gradient(90deg,#a8c5d4,#F1C9C2);"></div>
+    </div>
+    <div class="row" style="margin-top:4px;">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="r-pct-lbl">0% funded</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="r-weeks-lbl">Add parts below</span>
+    </div>
+    <hr class="divider">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:13px;color:var(--muted);">Saved so far: $</span>
+      <input class="inline-num" type="number" id="r-saved-input" min="0" step="1" value="0" style="font-size:18px;" oninput="saveData();renderRobotics()">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Add a part or project</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <input class="text-input" type="text" id="r-name" placeholder="e.g. Servo motors, Arduino kit...">
+      <div class="row-gap">
+        <div style="flex:1;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Price ($)</div>
+          <input class="num-input" type="number" id="r-cost" placeholder="0.00" min="0.01" step="0.01">
+        </div>
+        <button class="btn" onclick="addPart()">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="r-parts-container"></div>
+</div>
+
+<!-- ═══════════════════════════════ LEFTOVER TAB ═══════════════════════════════ -->
+<div id="view-overflow" class="tab-view">
+  <div class="card">
+    <div class="card-label">Where does leftover money go?</div>
+    <div id="overflow-sliders"></div>
+    <div class="seg-bar" id="overflow-seg"></div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;margin-top:4px;" id="overflow-pct-check"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">This week's leftover split</div>
+    <div id="overflow-breakdown"></div>
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-title">Smart tip</div>
+    <div class="tip-body" id="overflow-tip">—</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCENARIO TAB ═══════════════════════════════ -->
+<div id="view-scenario" class="tab-view">
+  <div class="card">
+    <div class="slider-row">
+      <div class="slider-header">
+        <span class="slider-label">Low week income</span>
+        <span class="slider-val" id="lbl-low">$100/wk</span>
+      </div>
+      <input type="range" id="sl-low" min="50" max="500" step="10" value="100" oninput="saveData();updateScenario()">
+    </div>
+    <div class="slider-row" style="margin-bottom:0;">
+      <div class="slider-header">
+        <span class="slider-label">High week income</span>
+        <span class="slider-val" id="lbl-high">$350/wk</span>
+      </div>
+      <input type="range" id="sl-high" min="100" max="700" step="10" value="350" oninput="saveData();updateScenario()">
+    </div>
+  </div>
+
+  <div class="scenario-grid" id="scenario-cards"></div>
+
+  <div class="tip-box" style="margin-top:10px;">
+    <div class="tip-title">Low week rule</div>
+    <div class="tip-body" id="low-rule">—</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SAVINGS DASHBOARD TAB ═══════════════════════════════ -->
+<div id="view-savings" class="tab-view">
+
+  <!-- Total net worth bar -->
+  <div class="card" style="border-color: #a8c5d4;">
+    <div class="card-label">Total savings across all buckets</div>
+    <div style="font-size:40px;font-weight:700;letter-spacing:-2px;margin:8px 0 4px;" id="net-total">$0</div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:14px;" id="net-sub">Enter your saved amounts below</div>
+    <div class="prog-wrap" style="height:16px;">
+      <div class="prog-bar" id="net-bar" style="width:0%;background:linear-gradient(90deg,#7fb3c8,#D6E8D9,#F1C9C2);"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="net-pct">0% of goal</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="net-goal-lbl">Goal: $0</span>
+    </div>
+  </div>
+
+  <!-- Individual bucket inputs -->
+  <div class="card">
+    <div class="card-label">Update your saved amounts</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Enter how much you currently have in each bucket. These update your overall total above.</p>
+
+    <div class="slider-row" style="margin-bottom:14px;">
+      <div class="slider-header" style="margin-bottom:8px;">
+        <span class="slider-label"><span class="dot" style="background:#7fb3c8"></span>Emergency fund</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="sv-ef-pct">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:16px;">$</span>
+        <input class="inline-num" type="number" id="sv-ef" min="0" step="1" value="0" style="font-size:16px;" oninput="syncEFSaved();saveData();updateSavings()">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="slider-row" style="margin-bottom:14px;">
+      <div class="slider-header" style="margin-bottom:8px;">
+        <span class="slider-label"><span class="dot" style="background:#a8c5d4"></span>Robotics fund</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="sv-rob-pct">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:16px;">$</span>
+        <input class="inline-num" type="number" id="sv-rob" min="0" step="1" value="0" style="font-size:16px;" oninput="syncRobSaved();saveData();updateSavings()">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="slider-row" style="margin-bottom:14px;">
+      <div class="slider-header" style="margin-bottom:8px;">
+        <span class="slider-label"><span class="dot" style="background:#D6E8D9"></span>Stock investments</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="sv-stocks-pct">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:16px;">$</span>
+        <input class="inline-num" type="number" id="sv-stocks" min="0" step="1" value="0" style="font-size:16px;" oninput="saveData();updateSavings()">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="slider-row" style="margin-bottom:0;">
+      <div class="slider-header" style="margin-bottom:8px;">
+        <span class="slider-label"><span class="dot" style="background:#F1C9C2"></span>General / spending cash</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="sv-cash-pct">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:16px;">$</span>
+        <input class="inline-num" type="number" id="sv-cash" min="0" step="1" value="0" style="font-size:16px;" oninput="saveData();updateSavings()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Breakdown visual -->
+  <div class="card" id="sv-breakdown-card">
+    <div class="card-label">Breakdown</div>
+    <div class="seg-bar" id="sv-seg-bar" style="height:14px;margin-bottom:14px;"></div>
+    <div id="sv-rows"></div>
+  </div>
+
+  <!-- Debt tracker -->
+  <div class="card" style="border-color:#F1C9C2;">
+    <div class="card-label">Mom debt payoff progress</div>
+    <div class="row" style="margin-bottom:10px;">
+      <div>
+        <div style="font-size:24px;font-weight:700;letter-spacing:-1px;" id="sv-mom-remain">$1,394</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--muted);">remaining to pay</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--mono);font-size:13px;font-weight:500;" id="sv-mom-paid">$0 paid</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--muted);" id="sv-mom-pct-lbl">0% done</div>
+      </div>
+    </div>
+    <div class="prog-wrap">
+      <div class="prog-bar" id="sv-mom-bar" style="width:0%;background:#F1C9C2;"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+      <span style="font-size:13px;color:var(--muted);">Total paid so far: $</span>
+      <input class="inline-num" type="number" id="sv-mom-paid-input" min="0" max="1394" step="1" value="0" style="font-size:16px;" oninput="saveData();updateSavings()">
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-title">Your financial snapshot</div>
+    <div class="tip-body" id="sv-snapshot">Add your saved amounts above to see your full picture.</div>
+  </div>
+
+</div>
+</div><!-- end content -->
+
+<div class="footer-hint">All data saved locally on this device · nothing leaves your browser</div>
+
+<script>
+const WEEKS = 4.33;
+const CAR = 149;
+const MOM_DEBT = 1394;
+const PART_COLORS = ['#D6E8D9','#F1C9C2','#a8c5d4','#7fb3c8','#b8d8e4','#d4e8d0','#f5d8d4','#c5dce8'];
+
+const EF_MILESTONES = [
+  {goal:500,  label:'🌱 Starter fund',      desc:'Covers 1–2 weeks of fixed bills. Your first real safety net.',       color:'#D6E8D9', next:'Slow EF to 3% and redirect savings to stocks or robotics.'},
+  {goal:900,  label:'🛡️ One month buffer',   desc:'Covers ~1 full month of car loan + mom payment. Real peace of mind.',color:'#f5c85a', next:'Well protected. Consider boosting your stock investment bucket.'},
+  {goal:1500, label:'🚀 Strong foundation',  desc:'Handles big surprises — car repairs, lost shifts, emergencies.',      color:'#a8c5d4', next:'Amazing! Now aggressively pay off mom or invest more.'},
+];
+
+const cats = [
+  {id:'gas',      label:'Gas',              pct:12, color:'#D6E8D9'},
+  {id:'spending', label:'General spending', pct:10, color:'#F1C9C2'},
+  {id:'robotics', label:'Robotics savings', pct:7,  color:'#a8c5d4'},
+  {id:'ef',       label:'Emergency fund',   pct:7,  color:'#7fb3c8'},
+  {id:'stocks',   label:'Stock investment', pct:6,  color:'#D6E8D9'},
+];
+
+const overflowCats = [
+  {id:'o-ef',     label:'Emergency fund top-up', pct:50, color:'#7fb3c8'},
+  {id:'o-mom',    label:'Extra mom payment',     pct:30, color:'#F1C9C2'},
+  {id:'o-stocks', label:'Extra stocks',          pct:10, color:'#D6E8D9'},
+  {id:'o-free',   label:'Free / treat yourself', pct:10, color:'#a8c5d4'},
+];
+
+let parts = [];
+
+// ── Local storage ──────────────────────────────────────────────────────────────
+function saveData() {
+  const data = {
+    income:    document.getElementById('sl-income').value,
+    mom:       document.getElementById('sl-mom').value,
+    efSaved:   document.getElementById('ef-saved').value,
+    rSaved:    document.getElementById('r-saved-input').value,
+    lowIncome: document.getElementById('sl-low').value,
+    highIncome:document.getElementById('sl-high').value,
+    svEf:      document.getElementById('sv-ef').value,
+    svRob:     document.getElementById('sv-rob').value,
+    svStocks:  document.getElementById('sv-stocks').value,
+    svCash:    document.getElementById('sv-cash').value,
+    svMomPaid: document.getElementById('sv-mom-paid-input').value,
+    cats:      cats.map(c=>({id:c.id,pct:c.pct})),
+    overflow:  overflowCats.map(c=>({id:c.id,pct:c.pct})),
+    parts,
+  };
+  localStorage.setItem('budget_planner_v1', JSON.stringify(data));
+  const b = document.getElementById('save-badge');
+  b.textContent = '✓ saved';
+  setTimeout(()=>{ b.textContent='● auto-saving'; }, 1200);
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem('budget_planner_v1');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.income)     document.getElementById('sl-income').value = d.income;
+    if (d.mom)        document.getElementById('sl-mom').value    = d.mom;
+    if (d.efSaved)    document.getElementById('ef-saved').value  = d.efSaved;
+    if (d.rSaved)     document.getElementById('r-saved-input').value = d.rSaved;
+    if (d.lowIncome)  document.getElementById('sl-low').value    = d.lowIncome;
+    if (d.highIncome) document.getElementById('sl-high').value   = d.highIncome;
+    if (d.svEf)       document.getElementById('sv-ef').value     = d.svEf;
+    if (d.svRob)      document.getElementById('sv-rob').value    = d.svRob;
+    if (d.svStocks)   document.getElementById('sv-stocks').value = d.svStocks;
+    if (d.svCash)     document.getElementById('sv-cash').value   = d.svCash;
+    if (d.svMomPaid)  document.getElementById('sv-mom-paid-input').value = d.svMomPaid;
+    if (d.cats)       d.cats.forEach(c=>{ const x=cats.find(k=>k.id===c.id); if(x) x.pct=c.pct; });
+    if (d.overflow)   d.overflow.forEach(c=>{ const x=overflowCats.find(k=>k.id===c.id); if(x) x.pct=c.pct; });
+    if (d.parts)      parts = d.parts;
+  } catch(e) {}
+}
+
+// ── Build sliders ──────────────────────────────────────────────────────────────
+function buildFlexSliders() {
+  const el = document.getElementById('flex-sliders');
+  el.innerHTML = '';
+  cats.forEach(c => {
+    el.innerHTML += `
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label"><span class="dot" style="background:${c.color}"></span>${c.label}</span>
+          <span class="slider-val" id="lbl-${c.id}">$0 (${c.pct}%)</span>
+        </div>
+        <input type="range" id="sl-${c.id}" min="0" max="50" step="1" value="${c.pct}"
+          oninput="cats.find(x=>x.id==='${c.id}').pct=parseInt(this.value);saveData();update()">
+      </div>`;
+  });
+}
+
+function buildOverflowSliders() {
+  const el = document.getElementById('overflow-sliders');
+  el.innerHTML = '';
+  overflowCats.forEach(c => {
+    el.innerHTML += `
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label"><span class="dot" style="background:${c.color}"></span>${c.label}</span>
+          <span class="slider-val" id="olbl-${c.id}">${c.pct}%</span>
+        </div>
+        <input type="range" id="osl-${c.id}" min="0" max="100" step="5" value="${c.pct}"
+          oninput="overflowCats.find(x=>x.id==='${c.id}').pct=parseInt(this.value);saveData();updateOverflow()">
+      </div>`;
+  });
+}
+
+// ── Core update ────────────────────────────────────────────────────────────────
+function update() {
+  const income  = parseInt(document.getElementById('sl-income').value);
+  const momMo   = parseInt(document.getElementById('sl-mom').value);
+  const momWk   = momMo / WEEKS;
+  const monthly = Math.round(income * WEEKS);
+  const flex    = Math.max(0, income - momWk);
+  const carWk   = Math.round(CAR / WEEKS);
+
+  document.getElementById('lbl-income').textContent  = '$' + income;
+  document.getElementById('s-income').textContent    = '$' + income;
+  document.getElementById('s-monthly').textContent   = '≈ $' + monthly.toLocaleString() + '/mo';
+  document.getElementById('s-flex').textContent      = '$' + Math.round(flex);
+  document.getElementById('lbl-mom').textContent     = '$' + momMo + '/mo';
+  document.getElementById('bar-car').style.width     = Math.min(100, Math.round((CAR/WEEKS)/income*100)) + '%';
+  document.getElementById('car-tip').textContent     = '💡 Set aside ~$' + carWk + '/wk so $149 is ready';
+  document.getElementById('s-mommonths').textContent = momMo > 0 ? Math.ceil(MOM_DEBT/momMo) + ' mo' : '— mo';
+  document.getElementById('mom-wk-tip').textContent  = momMo > 0 ? '💡 ≈$' + momWk.toFixed(2) + '/wk reserved' : '';
+
+  let usedPct = 0;
+  cats.forEach(c => {
+    usedPct += c.pct;
+    const amt = Math.round(flex * c.pct / 100);
+    const lbl = document.getElementById('lbl-' + c.id);
+    if (lbl) lbl.textContent = '$' + amt + '/wk (' + c.pct + '%)';
+    const sl = document.getElementById('sl-' + c.id);
+    if (sl) sl.value = c.pct;
+  });
+
+  const leftover = Math.max(0, Math.round(flex - Math.round(flex * usedPct / 100)));
+  document.getElementById('lbl-leftover').textContent = '$' + leftover + '/wk';
+  document.getElementById('s-leftover').textContent   = '$' + leftover;
+
+  const seg = document.getElementById('seg-bar');
+  seg.innerHTML = '';
+  cats.forEach(c => {
+    const d = document.createElement('div');
+    d.style.cssText = `background:${c.color};flex:${c.pct};border-radius:3px;`;
+    seg.appendChild(d);
+  });
+  const rem = document.createElement('div');
+  rem.style.cssText = `background:var(--surface2);flex:${Math.max(0,100-usedPct)};border-radius:3px;`;
+  seg.appendChild(rem);
+
+  updateOverflow();
+  updateEF();
+  renderRobotics();
+}
+
+// ── Overflow ───────────────────────────────────────────────────────────────────
+function updateOverflow() {
+  const income = parseInt(document.getElementById('sl-income').value);
+  const momMo  = parseInt(document.getElementById('sl-mom').value);
+  const flex   = Math.max(0, income - momMo/WEEKS);
+  const usedPct= cats.reduce((s,c)=>s+c.pct,0);
+  const left   = Math.max(0, Math.round(flex - Math.round(flex*usedPct/100)));
+  const total  = overflowCats.reduce((s,c)=>s+c.pct,0);
+
+  overflowCats.forEach(c=>{ const l=document.getElementById('olbl-'+c.id); if(l){l.textContent=c.pct+'%';} const s=document.getElementById('osl-'+c.id); if(s) s.value=c.pct; });
+
+  const seg=document.getElementById('overflow-seg');
+  seg.innerHTML='';
+  overflowCats.forEach(c=>{const d=document.createElement('div');d.style.cssText=`background:${c.color};flex:${c.pct};border-radius:3px;`;seg.appendChild(d);});
+
+  const chk=document.getElementById('overflow-pct-check');
+  chk.textContent = total>100 ? 'Total '+total+'% — reduce sliders' : 'Total: '+total+'%'+(total<100?' ('+(100-total)+'% stays in checking)':' ✓');
+  chk.style.color = total>100 ? '#f55a5a' : 'var(--muted)';
+
+  const bd=document.getElementById('overflow-breakdown');
+  if(left===0){
+    bd.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0;">No leftover this week — all income is allocated.</div>';
+  } else {
+    bd.innerHTML = overflowCats.map(c=>{
+      const amt=Math.round(left*c.pct/100);
+      return `<div class="overflow-row"><div class="slider-label"><span class="dot" style="background:${c.color}"></span>${c.label}</div><span style="font-family:var(--mono);font-size:13px;font-weight:500;">$${amt}/wk</span></div>`;
+    }).join('') + `<div class="row" style="margin-top:10px;"><span style="font-size:13px;color:var(--muted);">Total leftover</span><span style="font-family:var(--mono);font-size:13px;font-weight:500;">$${left}/wk</span></div>`;
+  }
+
+  const momExtra=Math.round(left*(overflowCats.find(c=>c.id==='o-mom').pct)/100);
+  const totalMom=momMo+Math.round(momExtra*WEEKS);
+  const mLeft=totalMom>0?Math.ceil(MOM_DEBT/totalMom):null;
+  document.getElementById('overflow-tip').textContent = left===0
+    ? 'Your buckets are using all flexible income. Lower one slider to create a buffer.'
+    : mLeft ? `With $${momMo}/mo regular + ≈$${Math.round(momExtra*WEEKS)}/mo overflow, you could pay off mom in about ${mLeft} months.`
+    : 'Set a mom repayment in the Budget tab to see your payoff timeline.';
+}
+
+// ── Emergency Fund ─────────────────────────────────────────────────────────────
+function getEFWeekly() {
+  const income=parseInt(document.getElementById('sl-income').value);
+  const momMo=parseInt(document.getElementById('sl-mom').value);
+  const flex=Math.max(0,income-momMo/WEEKS);
+  return Math.round(flex*cats.find(c=>c.id==='ef').pct/100);
+}
+
+function updateEF() {
+  const saved=parseFloat(document.getElementById('ef-saved').value)||0;
+  const wk=getEFWeekly();
+  document.getElementById('ef-contrib-note').textContent = wk>0
+    ? `Contributing ~$${wk}/wk ($${Math.round(wk*WEEKS)}/mo)`
+    : 'Set your EF % in the Budget tab';
+
+  const container=document.getElementById('ef-milestones');
+  container.innerHTML='';
+  let next=null;
+
+  EF_MILESTONES.forEach((m,i)=>{
+    const prev=i===0?0:EF_MILESTONES[i-1].goal;
+    const segPct=Math.min(100,Math.round(Math.max(0,saved-prev)/(m.goal-prev)*100));
+    const done=saved>=m.goal;
+    const active=!done&&saved>=prev;
+    const wksLeft=wk>0&&!done?Math.ceil((m.goal-saved)/wk):null;
+    if(active&&!next) next={m,wksLeft};
+
+    const isLight  = document.body.classList.contains('light');
+    const textColor = isLight ? '#1F3D51' : 'var(--text)';
+    const subColor  = isLight ? '#3a6070' : 'var(--muted)';
+    const cls = done ? 'milestone done' : (!active && i > 0 && saved < EF_MILESTONES[i-1].goal) ? 'milestone locked' : 'milestone';
+
+    let statusBadge = '';
+    if (done) {
+      statusBadge = `<span style="font-family:var(--mono);font-size:12px;color:${m.color};margin-left:8px;font-weight:700;">✓ REACHED</span>`;
+    } else if (active) {
+      statusBadge = `<span style="font-family:var(--mono);font-size:12px;color:${m.color};margin-left:8px;">● IN PROGRESS</span>`;
+    } else {
+      statusBadge = `<span style="font-family:var(--mono);font-size:12px;color:${isLight?'#5a7f96':'var(--muted)'};margin-left:8px;">○ UP NEXT</span>`;
+    }
+
+    container.innerHTML += `
+      <div class="${cls}">
+        <div class="row" style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+            <span style="font-size:15px;font-weight:700;color:${textColor};">${m.label}</span>
+            ${statusBadge}
+          </div>
+          <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:${m.color};">$${m.goal.toLocaleString()}</span>
+        </div>
+        <div style="font-size:13px;color:${subColor};margin-bottom:12px;line-height:1.6;">${m.desc}</div>
+        <div class="prog-wrap"><div class="prog-bar" style="width:${done?100:segPct}%;background:${m.color};"></div></div>
+        <div class="row" style="margin-top:8px;">
+          <span style="font-family:var(--mono);font-size:12px;color:${subColor};">$${Math.min(saved,m.goal).toLocaleString()} / $${m.goal.toLocaleString()}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:${subColor};">${done ? 'Complete! 🎉' : wksLeft && active ? '~'+wksLeft+' weeks away' : active ? 'Set EF % in Budget' : wksLeft ? '~'+wksLeft+' weeks away' : 'Set EF % to see'}</span>
+        </div>
+      </div>`;
+  });
+
+  const allDone=saved>=EF_MILESTONES[EF_MILESTONES.length-1].goal;
+  document.getElementById('ef-next-label').textContent=allDone?'🏆 All milestones reached!':next?'Next: '+next.m.label:'Next milestone';
+  document.getElementById('ef-next-tip').textContent=allDone
+    ?'Emergency fund is rock solid. Redirect EF contributions to stocks or robotics.'
+    :next?next.m.next+(next.wksLeft?' At your current rate, you\'ll hit $'+next.m.goal+' in ~'+next.wksLeft+' weeks.':'')
+    :'Enter your savings above to see progress and timeline.';
+}
+
+// ── Robotics ───────────────────────────────────────────────────────────────────
+function getRoboticsWeekly() {
+  const income=parseInt(document.getElementById('sl-income').value);
+  const momMo=parseInt(document.getElementById('sl-mom').value);
+  const flex=Math.max(0,income-momMo/WEEKS);
+  return Math.round(flex*cats.find(c=>c.id==='robotics').pct/100);
+}
+
+function addPart() {
+  const name=document.getElementById('r-name').value.trim();
+  const cost=parseFloat(document.getElementById('r-cost').value);
+  if(!name||!cost||cost<=0){alert('Please enter a name and price.');return;}
+  parts.push({id:Date.now(),name,cost});
+  document.getElementById('r-name').value='';
+  document.getElementById('r-cost').value='';
+  saveData();
+  renderRobotics();
+}
+
+function removePart(id) {
+  parts=parts.filter(p=>p.id!==id);
+  saveData();
+  renderRobotics();
+}
+
+function renderRobotics() {
+  const totalCost=parts.reduce((s,p)=>s+p.cost,0);
+  const saved=parseFloat(document.getElementById('r-saved-input').value)||0;
+  const weekly=getRoboticsWeekly();
+  const remaining=Math.max(0,totalCost-saved);
+  const pct=totalCost>0?Math.min(100,Math.round(saved/totalCost*100)):0;
+  const done=totalCost>0&&saved>=totalCost;
+  const wksLeft=weekly>0&&remaining>0?Math.ceil(remaining/weekly):null;
+
+  document.getElementById('r-main-bar').style.width=pct+'%';
+  document.getElementById('r-saved-disp').textContent='$'+saved.toLocaleString();
+  document.getElementById('r-goal-disp').textContent='of $'+totalCost.toFixed(2)+' total';
+  document.getElementById('r-pct-lbl').textContent=done?'🎉 Fully funded!':pct+'% funded';
+  document.getElementById('r-rate-note').textContent=weekly>0?'Saving $'+weekly+'/wk from your budget':'Set Robotics % in Budget tab';
+  document.getElementById('r-weeks-lbl').textContent=done?'Ready to build! 🤖':wksLeft?'~'+wksLeft+' wks (~'+Math.ceil(wksLeft/4.33)+' mo)':totalCost===0?'Add parts below':'Set Robotics % to see';
+
+  const container=document.getElementById('r-parts-container');
+  if(parts.length===0){
+    container.innerHTML=`<div style="text-align:center;padding:2rem 1rem;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius);">No parts yet — add one above!</div>`;
+    return;
+  }
+
+  const segHtml=parts.map((p,i)=>{
+    const w=totalCost>0?Math.round(p.cost/totalCost*100):0;
+    return `<div style="height:100%;background:${PART_COLORS[i%PART_COLORS.length]};flex:${w};border-radius:3px;" title="${p.name}"></div>`;
+  }).join('');
+
+  const rowsHtml=parts.map((p,i)=>`
+    <div class="part-row">
+      <div class="slider-label">
+        <span class="dot" style="background:${PART_COLORS[i%PART_COLORS.length]}"></span>
+        <span>${p.name}</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted);">${totalCost>0?Math.round(p.cost/totalCost*100):0}%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:var(--mono);font-size:13px;font-weight:500;">$${p.cost.toFixed(2)}</span>
+        <button class="btn-sm" onclick="removePart(${p.id})">✕</button>
+      </div>
+    </div>`).join('');
+
+  container.innerHTML=`
+    <div class="card">
+      <div class="card-label">Parts breakdown</div>
+      <div class="seg-bar">${segHtml}</div>
+      ${rowsHtml}
+      <hr class="divider">
+      <div class="row">
+        <span style="font-size:13px;font-weight:600;">Total cost</span>
+        <span style="font-family:var(--mono);font-size:14px;font-weight:700;">$${totalCost.toFixed(2)}</span>
+      </div>
+    </div>`;
+}
+
+// ── Scenario ───────────────────────────────────────────────────────────────────
+function updateScenario() {
+  const low=parseInt(document.getElementById('sl-low').value);
+  const high=parseInt(document.getElementById('sl-high').value);
+  document.getElementById('lbl-low').textContent='$'+low+'/wk';
+  document.getElementById('lbl-high').textContent='$'+high+'/wk';
+  const momMo=parseInt(document.getElementById('sl-mom').value);
+  const momWk=momMo/WEEKS;
+
+  function buckets(inc){const f=Math.max(0,inc-momWk);return cats.map(c=>({label:c.label,amt:Math.round(f*c.pct/100),color:c.color}));}
+  const lowB=buckets(low),highB=buckets(high);
+  const lowF=Math.max(0,Math.round(low-momWk)),highF=Math.max(0,Math.round(high-momWk));
+
+  function card(title,inc,flex,b){
+    const isLight = document.body.classList.contains('light');
+    const accentColor = isLight
+      ? (title==='Low week' ? '#c0444a' : '#1F3D51')
+      : (title==='Low week' ? '#F1C9C2' : '#D6E8D9');
+    const mutedColor  = isLight ? '#3a6070' : 'var(--muted)';
+    const dimColor    = isLight ? '#5a7f96' : 'var(--dim)';
+    return `<div class="scenario-card">
+      <div style="font-family:var(--mono);font-size:12px;color:${accentColor};margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;">${title}</div>
+      <div style="font-size:22px;font-weight:700;letter-spacing:-1px;margin-bottom:2px;">$${inc}/wk</div>
+      <div style="font-family:var(--mono);font-size:12px;color:${mutedColor};margin-bottom:12px;">$${flex} flexible</div>
+      ${b.map(x=>`<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;align-items:center;">
+        <div style="display:flex;align-items:center;gap:6px;"><span class="dot" style="width:6px;height:6px;background:${x.color}"></span><span style="color:${mutedColor};">${x.label}</span></div>
+        <span style="font-family:var(--mono);font-weight:500;">$${x.amt}</span></div>`).join('')}
+      <div style="font-family:var(--mono);font-size:12px;color:${dimColor};margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">Car: $149 due monthly</div>
+    </div>`;
+  }
+
+  document.getElementById('scenario-cards').innerHTML=card('Low week',low,lowF,lowB)+card('High week',high,highF,highB);
+
+  const ls=lowB.find(x=>x.label==='Stock investment');
+  const le=lowB.find(x=>x.label==='Emergency fund');
+  const carWk=Math.round(CAR/WEEKS);
+  document.getElementById('low-rule').textContent=low<carWk
+    ?`Warning: $${low}/wk is below your car loan's weekly share (~$${carWk}). Stash everything toward the car loan on weeks this low.`
+    :`On a $${low} week: reserve mom's share (~$${Math.round(momWk)}/wk), cover gas ($${lowB.find(x=>x.label==='Gas').amt}), and keep EF going ($${le?le.amt:0}/wk). Pause stocks ($${ls?ls.amt:0}/wk) if too tight.`;
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────────
+function setTab(tab) {
+  document.querySelectorAll('.tab-view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    if(btn.getAttribute('onclick').includes("'"+tab+"'")) btn.classList.add('active');
+  });
+  if(tab==='scenario') updateScenario();
+  if(tab==='overflow') updateOverflow();
+  if(tab==='ef')       updateEF();
+  if(tab==='robotics') renderRobotics();
+  if(tab==='savings')  updateSavings();
+}
+
+// ── Theme toggle ───────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('theme-icon').textContent  = isLight ? '🌙' : '☀️';
+  document.getElementById('theme-label').textContent = isLight ? 'Dark' : 'Light';
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', isLight ? '#f0f4f2' : '#1F3D51');
+  localStorage.setItem('budget_theme', isLight ? 'light' : 'dark');
+}
+
+function applyTheme() {
+  const saved = localStorage.getItem('budget_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-icon').textContent  = '🌙';
+    document.getElementById('theme-label').textContent = 'Dark';
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f0f4f2');
+  }
+}
+
+// ── Savings Dashboard ──────────────────────────────────────────────────────────
+function syncEFSaved() {
+  // keep ef-saved and sv-ef in sync
+  const v = document.getElementById('sv-ef').value;
+  document.getElementById('ef-saved').value = v;
+  updateEF();
+}
+function syncRobSaved() {
+  const v = document.getElementById('sv-rob').value;
+  document.getElementById('r-saved-input').value = v;
+  renderRobotics();
+}
+
+function updateSavings() {
+  const ef      = parseFloat(document.getElementById('sv-ef').value)           || 0;
+  const rob     = parseFloat(document.getElementById('sv-rob').value)           || 0;
+  const stocks  = parseFloat(document.getElementById('sv-stocks').value)        || 0;
+  const cash    = parseFloat(document.getElementById('sv-cash').value)          || 0;
+  const momPaid = parseFloat(document.getElementById('sv-mom-paid-input').value)|| 0;
+
+  const total   = ef + rob + stocks + cash;
+  const svGoal  = 1500 + parseFloat(document.getElementById('r-goal-disp').textContent.replace(/[^0-9.]/g,'')) || 3000;
+  const netGoal = Math.max(3000, Math.ceil(total * 1.5 / 500) * 500);
+  const netPct  = netGoal > 0 ? Math.min(100, Math.round(total / netGoal * 100)) : 0;
+
+  document.getElementById('net-total').textContent    = '$' + total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+  document.getElementById('net-bar').style.width      = netPct + '%';
+  document.getElementById('net-pct').textContent      = netPct + '% of goal';
+  document.getElementById('net-goal-lbl').textContent = 'Goal: $' + netGoal.toLocaleString();
+  document.getElementById('net-sub').textContent      = total > 0 ? 'Across emergency fund, robotics, stocks & cash' : 'Enter your saved amounts below';
+
+  // Segment percentages
+  const buckets = [
+    {id:'sv-ef-pct',     val:ef,     label:'Emergency fund', color:'#7fb3c8'},
+    {id:'sv-rob-pct',    val:rob,    label:'Robotics',       color:'#a8c5d4'},
+    {id:'sv-stocks-pct', val:stocks, label:'Stocks',         color:'#D6E8D9'},
+    {id:'sv-cash-pct',   val:cash,   label:'Cash',           color:'#F1C9C2'},
+  ];
+
+  buckets.forEach(b => {
+    const pct = total > 0 ? Math.round(b.val / total * 100) : 0;
+    const el  = document.getElementById(b.id);
+    if (el) el.textContent = total > 0 ? pct + '%' : '—';
+  });
+
+  // Segment bar
+  const seg = document.getElementById('sv-seg-bar');
+  seg.innerHTML = '';
+  buckets.forEach(b => {
+    if (b.val <= 0) return;
+    const d = document.createElement('div');
+    d.style.cssText = `background:${b.color};flex:${b.val};border-radius:3px;`;
+    seg.appendChild(d);
+  });
+  if (total === 0) {
+    const d = document.createElement('div');
+    d.style.cssText = 'background:var(--surface2);flex:1;border-radius:3px;';
+    seg.appendChild(d);
+  }
+
+  // Breakdown rows
+  const rows = document.getElementById('sv-rows');
+  rows.innerHTML = buckets.filter(b=>b.val>0).map(b => {
+    const pct = total > 0 ? Math.round(b.val/total*100) : 0;
+    return `<div class="overflow-row">
+      <div class="slider-label"><span class="dot" style="background:${b.color}"></span>${b.label}</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted);">${pct}%</span>
+        <span style="font-family:var(--mono);font-size:13px;font-weight:500;">$${b.val.toLocaleString()}</span>
+      </div>
+    </div>`;
+  }).join('') || '<div style="font-size:13px;color:var(--muted);padding:8px 0;">No savings entered yet.</div>';
+
+  // Mom debt bar
+  const momRemain = Math.max(0, MOM_DEBT - momPaid);
+  const momPct    = Math.min(100, Math.round(momPaid / MOM_DEBT * 100));
+  document.getElementById('sv-mom-remain').textContent  = '$' + momRemain.toLocaleString();
+  document.getElementById('sv-mom-paid').textContent    = '$' + momPaid.toLocaleString() + ' paid';
+  document.getElementById('sv-mom-pct-lbl').textContent = momPct + '% done';
+  document.getElementById('sv-mom-bar').style.width     = momPct + '%';
+
+  // Snapshot tip
+  const momMo = parseInt(document.getElementById('sl-mom').value);
+  const moLeft = momMo > 0 ? Math.ceil(momRemain / momMo) : null;
+  let snap = '';
+  if (total === 0 && momPaid === 0) {
+    snap = 'Add your saved amounts above to see your full financial picture.';
+  } else {
+    const parts2 = [];
+    if (total > 0) parts2.push(`You have $${total.toLocaleString()} saved across all buckets`);
+    if (stocks > 0) parts2.push(`$${stocks} invested in stocks`);
+    if (momRemain > 0 && moLeft) parts2.push(`mom debt clear in ~${moLeft} more months`);
+    else if (momRemain === 0) parts2.push(`mom debt fully paid off 🎉`);
+    snap = parts2.join(' · ') + '.';
+  }
+  document.getElementById('sv-snapshot').textContent = snap;
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+loadData();
+applyTheme();
+buildFlexSliders();
+buildOverflowSliders();
+update();
+renderRobotics();
+updateScenario();
+updateSavings();
+
+// Auto-save on all input changes
+document.addEventListener('input', () => saveData());
+</script>
+</body>
+</html>
